@@ -2,6 +2,7 @@
 
 #include "pch.h"
 
+// The purpose of this class is to provide a utility for parsing tokens in a command line and converting them to integers.
 class CommandLine {
 public:
     CommandLine(const std::string& commandLine);

@@ -2,7 +2,7 @@
 
 #include "pch.h"
 
-// Forward-declare the g_hMyComponentProvider variable that you will use for tracing in this component
+// Forward-declare the g_hMyComponentProvider variable that will be used in any class that wants to log events for the screen recorder.
 TRACELOGGING_DECLARE_PROVIDER(g_hMyComponentProvider);
 
 #define ReceivedFrameEvent() \

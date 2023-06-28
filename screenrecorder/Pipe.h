@@ -2,6 +2,7 @@
 
 #include "pch.h"
 
+// The purpose of this class is to wrap communication via a named pipe. It allows a server and client to send messages to each other.
 class Pipe {
 public:
     enum Mode { SERVER, CLIENT };

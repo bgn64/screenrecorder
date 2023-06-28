@@ -2,6 +2,7 @@
 
 #include "pch.h"
 
+// The purpose of this class is to get the handles to available monitors.
 struct MonitorInfo
 {
     MonitorInfo(HMONITOR monitorHandle)

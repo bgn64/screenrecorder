@@ -3,6 +3,7 @@
 #include "pch.h"
 #include "Pipe.h"
 
+// The purpose of this class is to implement RPC's for the Server.h class. It allows a client to send recording requests to the server.
 class ServerHandle {
 public:
     ServerHandle();

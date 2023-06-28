@@ -5,6 +5,7 @@
 #include "Pipe.h"
 #include "CommandLine.h"
 
+// The purpose of this class is to receive screen recording requests from clients and proces them.
 class Server {
 public:
     enum Request { START, STOP, CANCEL, DISCONNECT, KILL };

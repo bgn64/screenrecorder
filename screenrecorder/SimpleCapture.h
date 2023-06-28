@@ -28,6 +28,7 @@ namespace util
     using namespace robmikh::common::uwp;
 }
 
+// This purpose of this class is to take screenshots and save them to disk.
 class SimpleCapture
 {
 public:
