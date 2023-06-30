@@ -124,7 +124,9 @@ void SimpleCapture::SaveFrames(StorageFolder storageFolder)
 {
     int i = 1;
     for (const auto& frame : m_frames) {
-        std::wstring filename = L"screenshot" + std::to_wstring(i) + L".jpg";
+        std::wstringstream wss;
+        wss << L"screenshot" << std::setw(4) << std::setfill(L'0') << i << L".jpg";
+        std::wstring filename = wss.str();
         Windows::Storage::StorageFile file = storageFolder.CreateFileAsync(filename.c_str(), Windows::Storage::CreationCollisionOption::ReplaceExisting).get();
 
         // Get the file stream
