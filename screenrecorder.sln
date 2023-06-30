@@ -7,16 +7,28 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "screenrecorder", "screenrec
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM = Debug|ARM
+		Debug|ARM64 = Debug|ARM64
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Release|ARM = Release|ARM
+		Release|ARM64 = Release|ARM64
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{04859336-C1A1-453A-B77C-9080F0C17A41}.Debug|ARM.ActiveCfg = Debug|ARM
+		{04859336-C1A1-453A-B77C-9080F0C17A41}.Debug|ARM.Build.0 = Debug|ARM
+		{04859336-C1A1-453A-B77C-9080F0C17A41}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{04859336-C1A1-453A-B77C-9080F0C17A41}.Debug|ARM64.Build.0 = Debug|ARM64
 		{04859336-C1A1-453A-B77C-9080F0C17A41}.Debug|x64.ActiveCfg = Debug|x64
 		{04859336-C1A1-453A-B77C-9080F0C17A41}.Debug|x64.Build.0 = Debug|x64
 		{04859336-C1A1-453A-B77C-9080F0C17A41}.Debug|x86.ActiveCfg = Debug|Win32
 		{04859336-C1A1-453A-B77C-9080F0C17A41}.Debug|x86.Build.0 = Debug|Win32
+		{04859336-C1A1-453A-B77C-9080F0C17A41}.Release|ARM.ActiveCfg = Release|ARM
+		{04859336-C1A1-453A-B77C-9080F0C17A41}.Release|ARM.Build.0 = Release|ARM
+		{04859336-C1A1-453A-B77C-9080F0C17A41}.Release|ARM64.ActiveCfg = Release|ARM64
+		{04859336-C1A1-453A-B77C-9080F0C17A41}.Release|ARM64.Build.0 = Release|ARM64
 		{04859336-C1A1-453A-B77C-9080F0C17A41}.Release|x64.ActiveCfg = Release|x64
 		{04859336-C1A1-453A-B77C-9080F0C17A41}.Release|x64.Build.0 = Release|x64
 		{04859336-C1A1-453A-B77C-9080F0C17A41}.Release|x86.ActiveCfg = Release|Win32

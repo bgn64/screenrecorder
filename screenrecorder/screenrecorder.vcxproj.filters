@@ -15,28 +15,25 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\CommandLine.h">
+    <ClInclude Include="ServerHandle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\MonitorInfo.h">
+    <ClInclude Include="CommandLine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\pch.h">
+    <ClInclude Include="MonitorInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\Pipe.h">
+    <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\ScreenRecordingToolProvider.h">
+    <ClInclude Include="Pipe.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\Server.h">
+    <ClInclude Include="Server.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\ServerHandle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\SimpleCapture.h">
+    <ClInclude Include="SimpleCapture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -44,22 +41,25 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\CommandLine.cpp">
+    <ClCompile Include="ServerHandle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\pch.cpp">
+    <ClCompile Include="CommandLine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\Pipe.cpp">
+    <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\Server.cpp">
+    <ClCompile Include="Pipe.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\ServerHandle.cpp">
+    <ClCompile Include="ScreenRecordingToolProvider.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Server.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D:\test-automation\ScreenRecordingTool\ScreenRecordingTool\SimpleCapture.cpp">
+    <ClCompile Include="SimpleCapture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
