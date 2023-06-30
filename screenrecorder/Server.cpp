@@ -35,9 +35,9 @@ Server::~Server()
 
 std::string Server::start(const CommandLine& cmd)
 {
-    if (cmd.Size() != 3)
+    if (cmd.Size() != 4)
     {
-        return std::to_string(FAILURE) + " Server Usage: start <framerate> <framesBufferSize>";
+        return std::to_string(FAILURE) + " Server Usage: start <framerate> <framesBufferSize> <monitorIndex>";
     }
 
     if (isCapturing)
@@ -59,11 +59,24 @@ std::string Server::start(const CommandLine& cmd)
         return std::to_string(FAILURE) + " Server Usage: framesBufferSize must be an integer";
     }
 
+    int monitorIndex;
+    std::vector<MonitorInfo> monitors = MonitorInfo::EnumerateAllMonitors(true);
+
+    if (!cmd.TryGetAsInt(3, monitorIndex))
+    {
+        return std::to_string(FAILURE) + " Server Usage: monitorIndex must be an integer";
+    }
+
+    if (monitorIndex < 0 || monitors.size() <= monitorIndex) 
+    {
+        return std::to_string(FAILURE) + " Server Usage: monitorIndex out of range";
+    }
+
     auto d3dDevice = util::CreateD3DDevice();
     auto dxgiDevice = d3dDevice.as<IDXGIDevice>();
     auto device = CreateDirect3DDevice(dxgiDevice.get());
 
-    MonitorInfo monitorInfo = MonitorInfo::EnumerateAllMonitors(true)[0];
+    MonitorInfo monitorInfo = monitors[monitorIndex];
     auto item = util::CreateCaptureItemForMonitor(monitorInfo.MonitorHandle);
 
     m_simpleCapture = std::make_unique<SimpleCapture>(device, item, framerate, framesBufferSize);

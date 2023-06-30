@@ -16,9 +16,9 @@ ServerHandle::~ServerHandle()
 {
 }
 
-void ServerHandle::start(int framerate, int framesBufferSize)
+void ServerHandle::start(int framerate, int framesBufferSize, int monitorIndex)
 {
-    std::string request = std::to_string(Server::START) + " " + std::to_string(framerate) + " " + std::to_string(framesBufferSize);
+    std::string request = std::to_string(Server::START) + " " + std::to_string(framerate) + " " + std::to_string(framesBufferSize) + " " + std::to_string(monitorIndex);
     m_pipe.send(request);
 
     CommandLine cmd(m_pipe.receive());

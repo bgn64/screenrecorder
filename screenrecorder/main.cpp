@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "Server.h"
 #include "ServerHandle.h"
+#include "MonitorInfo.h"
 
 TRACELOGGING_DEFINE_PROVIDER(
     g_hMyComponentProvider,
@@ -29,26 +30,27 @@ TRACELOGGING_DEFINE_PROVIDER(
         return; \
     }
 
-const std::string helpMessage = "\n\tUsage: ScreenRecordingTool.exe options ...\n\n"
+const std::string helpMessage = "\n\tUsage: screenrecorder.exe options ...\n\n"
 "\t-help start\t- for screen recording start command\n"
 "\t-help stop\t- for screen recording stop commands\n";
 
-const std::string startHelpMessage = "\n  ScreenRecordingTool.exe -start ...        Starts screen recording.\n"
-"\tUsage:\tScreenRecordingTool.exe -start [-framerate <framerate>] [-framebuffer <# of frames>]\n"
-"\tEx>\tScreenRecordingTool.exe -start -framerate 10\n"
-"\tEx>\tScreenRecordingTool.exe -start -framerate 1 -framebuffer 5\n\n"
+const std::string startHelpMessage = "\n  screenrecorder.exe -start ...        Starts screen recording.\n"
+"\tUsage:\tscreenrecorder.exe -start [-framerate <framerate>] [-framebuffer <# of frames>] [-monitor <monitor # to record>]\n"
+"\tEx>\tscreenrecorder.exe -start -framerate 10\n"
+"\tEx>\tscreenrecorder.exe -start -framerate 1 -framebuffer 5 -monitor 0\n\n"
 "\t-framerate\tSpecifies the rate at which screenshots will be taken, in frames per second.\n"
-"\t-framebuffer\tSpecifies the size of the circular memory buffer in which to store screenshots, in number of screenshots.\n";
+"\t-framebuffer\tSpecifies the size of the circular memory buffer in which to store screenshots, in number of screenshots.\n"
+"\t-framebuffer\tSpecifies which monitor screen to record, as an integer.\n";
 
-const std::string stopHelpMessage = "\n  ScreenRecordingTool.exe -stop ...         Stops screen recording saves all screenshots in buffer to a folder.\n"
-"\tUsage:\tScreenRecordingTool.exe -stop <recording folder>\n"
-"\tEx>\tScreenRecordingTool.exe -stop \"D:\\ScreenRecordingTool\"\n"
-"\n  ScreenRecordingTool.exe -cancel ...       Cancels the screen recording.\n"
-"\tUsage:\tScreenRecordingTool.exe -cancel\n";
+const std::string stopHelpMessage = "\n  screenrecorder.exe -stop ...         Stops screen recording saves all screenshots in buffer to a folder.\n"
+"\tUsage:\tscreenrecorder.exe -stop <recording folder>\n"
+"\tEx>\tscreenrecorder.exe -stop \"D:\\screenrecorder\"\n"
+"\n  screenrecorder.exe -cancel ...       Cancels the screen recording.\n"
+"\tUsage:\tscreenrecorder.exe -cancel\n";
 
 const std::string invalidCommandSynatxMessage = "\b\tInvalid command syntax.";
 
-void Start(int framerate, int framebuffer)
+void Start(int framerate, int framebuffer, int monitorIndex)
 {
     // Check to make sure recording process does not exist before starting a recording
 
@@ -113,7 +115,7 @@ void Start(int framerate, int framebuffer)
         return;
     }
 
-    HANDLE_EXCEPTIONS(serverHandle->start(framerate, framebuffer));
+    HANDLE_EXCEPTIONS(serverHandle->start(framerate, framebuffer, monitorIndex));
     HANDLE_EXCEPTIONS(serverHandle->disconnect());
 }
 
@@ -192,7 +194,7 @@ void NewClient()
 
     if (!serverHandle->try_init())
     {
-        std::cout << "\n\tThere is no server active to conncect to." << std::endl;
+        std::cout << "\n\tThere is no server active to connect to." << std::endl;
 
         return;
     }
@@ -230,7 +232,16 @@ void NewClient()
                 continue;
             }
 
-            HANDLE_EXCEPTIONS(serverHandle->start(framerate, framesBufferSize));
+            int monitorIndex;
+
+            if (!cmd.TryGetAsInt(3, monitorIndex))
+            {
+                std::cout << "Usage: monitor must be an integer" << std::endl;
+
+                continue;
+            }
+
+            HANDLE_EXCEPTIONS(serverHandle->start(framerate, framesBufferSize, monitorIndex));
         }
         else if (cmd.Get(0) == "stop")
         {
@@ -295,15 +306,31 @@ int main(int argc, char* argv[])
     {
         int framerate = 1;
         int framebuffer = 10;
+        int monitorIndex = 0;
 
         for (int i = 2; i < cmd.Size(); i++) 
         {
-            if (cmd.Get(i) == "-framerate" && cmd.TryGetAsInt(i, framerate))
+            if (cmd.Get(i) == "-framerate" && i + 1 < cmd.Size()  && cmd.TryGetAsInt(i + 1, framerate))
             {
                 i++;
             }
-            else if (cmd.Get(i) == "-framebuffer" && cmd.TryGetAsInt(i, framebuffer))
+            else if (cmd.Get(i) == "-framebuffer" && i + 1 < cmd.Size() && cmd.TryGetAsInt(i + 1, framebuffer))
             {
+                i++;
+            }
+            else if (cmd.Get(i) == "-monitor" && i + 1 < cmd.Size() && cmd.TryGetAsInt(i + 1, monitorIndex))
+            {
+                // Given that # of monitors is an implementation detail of the server, in the future we should let the server throw us an error if this happens.
+                // Before we do this, I would like to revamp how the server returns errrors. Don't love the protocol for responses at the moment.
+                std::vector<MonitorInfo> monitors = MonitorInfo::EnumerateAllMonitors(true);
+
+                if (monitorIndex < 0 || monitors.size() <= monitorIndex) 
+                {
+                    std::cout << "\n\tThis is not a valid monitor." << std::endl;
+
+                    return 0;
+                }
+
                 i++;
             }
             else 
@@ -315,7 +342,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        Start(framerate, framebuffer);
+        Start(framerate, framebuffer, monitorIndex);
     }
     else if (cmd.Get(1) == "-stop")
     {
