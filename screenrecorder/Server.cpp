@@ -79,7 +79,8 @@ std::string Server::start(const CommandLine& cmd)
     MonitorInfo monitorInfo = monitors[monitorIndex];
     auto item = util::CreateCaptureItemForMonitor(monitorInfo.MonitorHandle);
 
-    m_simpleCapture = std::make_unique<SimpleCapture>(device, item, framerate, framesBufferSize);
+    auto buffer = CircularFrameBuffer::with_frame_capacity(framesBufferSize);
+    m_simpleCapture = std::make_unique<SimpleCapture>(device, item, framerate, buffer);
 
     m_simpleCapture->StartCapture();
     isCapturing = true;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.h"
+#include "CircularFrameBuffer.h"
 
 using namespace winrt;
 using namespace Windows::Foundation;
@@ -35,7 +36,7 @@ public:
     SimpleCapture(
         winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DDevice const& device,
         winrt::Windows::Graphics::Capture::GraphicsCaptureItem const& item,
-        int framerate, int framesBufferSize);
+        int framerate, CircularFrameBuffer frameBuffer);
     ~SimpleCapture() { Close(); }
 
     void StartCapture();
@@ -79,7 +80,7 @@ private:
     std::atomic<bool> m_closed = false;
     std::atomic<bool> m_captureNextImage = false;
 
-    std::vector<winrt::com_ptr<ID3D11Texture2D>> m_frames;
+    CircularFrameBuffer m_frameBuffer;
     std::chrono::steady_clock::time_point m_lastFrameTime;
     int m_frameInterval;
     int m_framesBufferSize;

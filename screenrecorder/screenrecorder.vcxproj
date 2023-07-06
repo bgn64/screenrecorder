@@ -117,6 +117,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CircularFrameBuffer.h" />
     <ClInclude Include="ServerHandle.h" />
     <ClInclude Include="CommandLine.h" />
     <ClInclude Include="MonitorInfo.h" />
@@ -126,6 +127,7 @@
     <ClInclude Include="SimpleCapture.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CircularFrameBuffer.cpp" />
     <ClCompile Include="ServerHandle.cpp" />
     <ClCompile Include="CommandLine.cpp" />
     <ClCompile Include="main.cpp" />

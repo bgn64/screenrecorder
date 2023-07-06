@@ -20,7 +20,9 @@ namespace util
     using namespace robmikh::common::uwp;
 }
 
-SimpleCapture::SimpleCapture(winrt::IDirect3DDevice const& device, winrt::GraphicsCaptureItem const& item, int framerate, int framesBufferSize)
+SimpleCapture::SimpleCapture(winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DDevice const& device, 
+    winrt::Windows::Graphics::Capture::GraphicsCaptureItem const& item, 
+    int framerate, CircularFrameBuffer frameBuffer) : m_frameInterval(1000 / framerate), m_frameBuffer(frameBuffer)
 {
     m_item = item;
     m_device = device;
@@ -40,9 +42,6 @@ SimpleCapture::SimpleCapture(winrt::IDirect3DDevice const& device, winrt::Graphi
     m_session = m_framePool.CreateCaptureSession(m_item);
     m_lastSize = m_item.Size();
     m_framePool.FrameArrived({ this, &SimpleCapture::OnFrameArrived });
-
-    m_frameInterval = 1000 / framerate;
-    m_framesBufferSize = framesBufferSize;
 }
 
 void SimpleCapture::StartCapture()
@@ -75,7 +74,7 @@ void SimpleCapture::CloseAndSave(StorageFolder storageFolder)
         m_session.Close();
         m_framePool.Close();
 
-        SaveFrames(storageFolder);
+        m_frameBuffer.save_frames(storageFolder);
 
         m_framePool = nullptr;
         m_session = nullptr;
@@ -112,48 +111,8 @@ void SimpleCapture::OnFrameArrived(winrt::Direct3D11CaptureFramePool const& send
 
         m_d3dContext->CopyResource(frameTexture.get(), surfaceTexture.get());
 
-        // Check if m_frames has reached maximum size
-        if (m_frames.size() == m_framesBufferSize) 
-        {
-            // Remove oldest frame
-            m_frames.erase(m_frames.begin());
-        }
-
-        m_frames.push_back(frameTexture);
+        m_frameBuffer.add_frame(frameTexture, filename);
 
         m_lastFrameTime = now;
-    }
-}
-
-void SimpleCapture::SaveFrames(StorageFolder storageFolder)
-{
-    int i = 1;
-    for (const auto& frame : m_frames) {
-        std::wstringstream wss;
-        wss << L"screenshot" << std::setw(4) << std::setfill(L'0') << i << L".jpg";
-        std::wstring filename = wss.str();
-        Windows::Storage::StorageFile file = storageFolder.CreateFileAsync(filename.c_str(), Windows::Storage::CreationCollisionOption::ReplaceExisting).get();
-
-        // Get the file stream
-        auto stream = file.OpenAsync(winrt::FileAccessMode::ReadWrite).get();
-
-        // Initialize the encoder
-        auto encoder = winrt::BitmapEncoder::CreateAsync(m_fileFormatGuid, stream).get();
-
-        // Encode the image
-        D3D11_TEXTURE2D_DESC desc = {};
-        frame->GetDesc(&desc);
-        auto bytes = util::CopyBytesFromTexture(frame);
-        encoder.SetPixelData(
-            m_bitmapPixelFormat,
-            winrt::BitmapAlphaMode::Premultiplied,
-            desc.Width,
-            desc.Height,
-            1.0,
-            1.0,
-            bytes);
-        encoder.FlushAsync().get();
-
-        i++;
     }
 }
