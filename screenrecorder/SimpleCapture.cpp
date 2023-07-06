@@ -85,7 +85,6 @@ void SimpleCapture::CloseAndSave(StorageFolder storageFolder)
 
 void SimpleCapture::OnFrameArrived(winrt::Direct3D11CaptureFramePool const& sender, winrt::IInspectable const&)
 {
-    ReceivedFrameEvent();
     auto frame = sender.TryGetNextFrame();
 
     auto now = std::chrono::steady_clock::now();
@@ -93,6 +92,14 @@ void SimpleCapture::OnFrameArrived(winrt::Direct3D11CaptureFramePool const& send
     
     if (timeSinceLastFrame >= m_frameInterval) 
     {
+        auto now_time_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&now_time_t), "%Y-%m-%d_%H-%M-%S");
+        std::string timestamp = ss.str();
+        std::string filename = "screenshot_" + timestamp + ".jpg";
+
+        ReceivedFrameEvent(filename);
+
         // Store frame
 
         auto surfaceTexture = GetDXGIInterfaceFromObject<ID3D11Texture2D>(frame.Surface());
@@ -113,8 +120,6 @@ void SimpleCapture::OnFrameArrived(winrt::Direct3D11CaptureFramePool const& send
         }
 
         m_frames.push_back(frameTexture);
-
-        StoredFrameEvent();
 
         m_lastFrameTime = now;
     }
