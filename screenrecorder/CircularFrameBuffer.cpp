@@ -1,13 +1,21 @@
 #include "pch.h"
+#include "ScreenRecordingToolProvider.h"
 #include "CircularFrameBuffer.h"
 
 CircularFrameBuffer::CircularFrameBuffer(size_t capacity, bool asMegabytes) : m_capacity(capacity), m_asMegabytes(asMegabytes), m_memoryUsage(0)
 {
+    if (asMegabytes) 
+    {
+        m_capacity *= 1000000;
+    }
 }
 
 void CircularFrameBuffer::add_frame(winrt::com_ptr<ID3D11Texture2D> texture, const std::string& filename) 
 {
     size_t frame_size = calculate_frame_size(texture);
+
+    ReceivedFrameEvent(std::to_string(frame_size));
+    ReceivedFrameEvent(std::to_string(m_memoryUsage));
 
     if (m_asMegabytes) 
     {
@@ -29,11 +37,59 @@ void CircularFrameBuffer::add_frame(winrt::com_ptr<ID3D11Texture2D> texture, con
 
 size_t CircularFrameBuffer::calculate_frame_size(winrt::com_ptr<ID3D11Texture2D> texture) 
 {
+    if (!texture)
+        return 0;
+
     D3D11_TEXTURE2D_DESC desc;
     texture->GetDesc(&desc);
-    size_t row_pitch = (desc.Width * desc.Format * 8 + 7) / 8;
-    size_t slice_pitch = row_pitch * desc.Height;
-    return slice_pitch * desc.ArraySize;
+
+    UINT bpp = 0;
+    switch (desc.Format)
+    {
+    case DXGI_FORMAT_R32G32B32A32_FLOAT:
+    case DXGI_FORMAT_R32G32B32A32_UINT:
+    case DXGI_FORMAT_R32G32B32A32_SINT:
+        bpp = 128;
+        break;
+    case DXGI_FORMAT_R32G32B32_FLOAT:
+    case DXGI_FORMAT_R32G32B32_UINT:
+    case DXGI_FORMAT_R32G32B32_SINT:
+        bpp = 96;
+        break;
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+    case DXGI_FORMAT_R16G16B16A16_UNORM:
+    case DXGI_FORMAT_R16G16B16A16_UINT:
+    case DXGI_FORMAT_R16G16B16A16_SNORM:
+    case DXGI_FORMAT_R16G16B16A16_SINT:
+    case DXGI_FORMAT_R32G32_FLOAT:
+    case DXGI_FORMAT_R32G32_UINT:
+    case DXGI_FORMAT_R32G32_SINT:
+        bpp = 64;
+        break;
+    case DXGI_FORMAT_R10G10B10A2_UNORM:
+    case DXGI_FORMAT_R10G10B10A2_UINT:
+    case DXGI_FORMAT_R11G11B10_FLOAT:
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+    case DXGI_FORMAT_R8G8B8A8_UINT:
+    case DXGI_FORMAT_R8G8B8A8_SNORM:
+    case DXGI_FORMAT_R8G8B8A8_SINT:
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
+    case DXGI_FORMAT_B8G8R8X8_UNORM:
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+    case DXGI_FORMAT_R16G16_FLOAT:
+    case DXGI_FORMAT_R16G16_UNORM:
+    case DXGI_FORMAT_R16G16_UINT:
+    case DXGI_FORMAT_R16G16_SNORM:
+    case DXGI_FORMAT_R16G16_SINT:
+        bpp = 32;
+        break;
+    }
+
+    size_t size = desc.Width * desc.Height * bpp / 8;
+
+    return size;
 }
 
 void CircularFrameBuffer::save_frames(winrt::Windows::Storage::StorageFolder storageFolder) 

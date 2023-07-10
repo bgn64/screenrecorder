@@ -45,6 +45,25 @@ bool CommandLine::TryGetAsInt(int i, int& value) const
     }
 }
 
+bool CommandLine::TryGetAsBool(int i, bool& value) const
+{
+    if (i < 0 || i >= tokens.size())
+    {
+        throw std::out_of_range("Token index out of range");
+    }
+
+    try
+    {
+        value = std::stoi(tokens[i]) != 0;
+
+        return true;
+    }
+    catch (...)
+    {
+        return false;
+    }
+}
+
 
 std::string CommandLine::Get(int startIndex, int stopIndex) const 
 {

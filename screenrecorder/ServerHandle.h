@@ -16,7 +16,7 @@ public:
      * @throws std::invalid_argument if we receive an error from the server
      * @throws std::runtime_error if server responds with an unknown format
      */
-    void start(int framerate, int framesBufferSize, int monitorIndex);
+    void start(int framerate, int framesBufferSize, bool isMegabytes, int monitorIndex);
 
     /**
      * @throws std::ios_base::failure if communication with server fails unexpectedly

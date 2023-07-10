@@ -15,6 +15,11 @@ public:
     bool TryGetAsInt(int i , int& value) const;
 
     /**
+     * @throws std::out_of_range exception if index is out of range of tokens
+     */
+    bool TryGetAsBool(int i, bool& value) const;
+
+    /**
      * @throws std::out_of_range exception if indices are out of range of tokens
      */
     std::string Get(int startIndex, int stopIndex) const;

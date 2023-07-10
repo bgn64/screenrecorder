@@ -35,9 +35,9 @@ Server::~Server()
 
 std::string Server::start(const CommandLine& cmd)
 {
-    if (cmd.Size() != 4)
+    if (cmd.Size() != 5)
     {
-        return std::to_string(FAILURE) + " Server Usage: start <framerate> <framesBufferSize> <monitorIndex>";
+        return std::to_string(FAILURE) + " Server Usage: start <framerate> <framesBufferSize> <isMegabytes> <monitorIndex>";
     }
 
     if (isCapturing)
@@ -59,10 +59,17 @@ std::string Server::start(const CommandLine& cmd)
         return std::to_string(FAILURE) + " Server Usage: framesBufferSize must be an integer";
     }
 
+    bool isMegabytes;
+
+    if (!cmd.TryGetAsBool(3, isMegabytes))
+    {
+        return std::to_string(FAILURE) + " Server Usage: framesBufferSize must be an boolean";
+    }
+
     int monitorIndex;
     std::vector<MonitorInfo> monitors = MonitorInfo::EnumerateAllMonitors(true);
 
-    if (!cmd.TryGetAsInt(3, monitorIndex))
+    if (!cmd.TryGetAsInt(4, monitorIndex))
     {
         return std::to_string(FAILURE) + " Server Usage: monitorIndex must be an integer";
     }
@@ -79,7 +86,7 @@ std::string Server::start(const CommandLine& cmd)
     MonitorInfo monitorInfo = monitors[monitorIndex];
     auto item = util::CreateCaptureItemForMonitor(monitorInfo.MonitorHandle);
 
-    auto buffer = CircularFrameBuffer::with_frame_capacity(framesBufferSize);
+    CircularFrameBuffer buffer(framesBufferSize, isMegabytes);
     m_simpleCapture = std::make_unique<SimpleCapture>(device, item, framerate, buffer);
 
     m_simpleCapture->StartCapture();

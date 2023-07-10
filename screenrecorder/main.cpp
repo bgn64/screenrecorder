@@ -50,7 +50,7 @@ const std::string stopHelpMessage = "\n  screenrecorder.exe -stop ...         St
 
 const std::string invalidCommandSynatxMessage = "\b\tInvalid command syntax.";
 
-void Start(int framerate, int framebuffer, int monitorIndex)
+void Start(int framerate, int framebuffer, bool isMegabytes, int monitorIndex)
 {
     // Check to make sure recording process does not exist before starting a recording
 
@@ -115,7 +115,7 @@ void Start(int framerate, int framebuffer, int monitorIndex)
         return;
     }
 
-    HANDLE_EXCEPTIONS(serverHandle->start(framerate, framebuffer, monitorIndex));
+    HANDLE_EXCEPTIONS(serverHandle->start(framerate, framebuffer, isMegabytes, monitorIndex));
     HANDLE_EXCEPTIONS(serverHandle->disconnect());
 }
 
@@ -186,94 +186,94 @@ void NewServer()
     server->run();
 }
 
-void NewClient()
-{
-    // Create serverHandle
-
-    std::unique_ptr<ServerHandle> serverHandle = std::make_unique<ServerHandle>();
-
-    if (!serverHandle->try_init())
-    {
-        std::cout << "\n\tThere is no server active to connect to." << std::endl;
-
-        return;
-    }
-    while (true) 
-    {
-        std::string input;
-        std::cout << ">> ";
-        std::getline(std::cin, input);
-        CommandLine cmd(input);
-
-        if (cmd.Get(0) == "start") 
-        {
-            if (cmd.Size() != 3)
-            {
-                std::cout << "Usage: start <framerate> <framesBufferSize>" << std::endl;
-
-                continue;
-            }
-
-            int framerate;
-
-            if (!cmd.TryGetAsInt(1, framerate))
-            {
-                std::cout << "Usage: framerate must be an integer" << std::endl;
-
-                continue;
-            }
-
-            int framesBufferSize;
-
-            if (!cmd.TryGetAsInt(2, framesBufferSize))
-            {
-                std::cout << "Usage: framesBufferSize must be an integer" << std::endl;
-
-                continue;
-            }
-
-            int monitorIndex;
-
-            if (!cmd.TryGetAsInt(3, monitorIndex))
-            {
-                std::cout << "Usage: monitor must be an integer" << std::endl;
-
-                continue;
-            }
-
-            HANDLE_EXCEPTIONS(serverHandle->start(framerate, framesBufferSize, monitorIndex));
-        }
-        else if (cmd.Get(0) == "stop")
-        {
-            if (cmd.Size() != 2)
-            {
-                std::cout << "Usage: stop <folder>" << std::endl;
-
-                continue;
-            }
-
-            std::string folderPath = cmd.Get(1);
-
-            HANDLE_EXCEPTIONS(serverHandle->stop(folderPath));
-        }
-        else if (cmd.Get(0) == "cancel")
-        {
-            HANDLE_EXCEPTIONS(serverHandle->cancel());
-        }
-        else if (cmd.Get(0) == "disconnect")
-        {
-            HANDLE_EXCEPTIONS(serverHandle->disconnect());
-
-            break;
-        }
-        else if (cmd.Get(0) == "kill")
-        {
-            HANDLE_EXCEPTIONS(serverHandle->kill());
-
-            break;
-        }
-    }
-}
+//void NewClient()
+//{
+//    // Create serverHandle
+//
+//    std::unique_ptr<ServerHandle> serverHandle = std::make_unique<ServerHandle>();
+//
+//    if (!serverHandle->try_init())
+//    {
+//        std::cout << "\n\tThere is no server active to connect to." << std::endl;
+//
+//        return;
+//    }
+//    while (true) 
+//    {
+//        std::string input;
+//        std::cout << ">> ";
+//        std::getline(std::cin, input);
+//        CommandLine cmd(input);
+//
+//        if (cmd.Get(0) == "start") 
+//        {
+//            if (cmd.Size() != 3)
+//            {
+//                std::cout << "Usage: start <framerate> <framesBufferSize>" << std::endl;
+//
+//                continue;
+//            }
+//
+//            int framerate;
+//
+//            if (!cmd.TryGetAsInt(1, framerate))
+//            {
+//                std::cout << "Usage: framerate must be an integer" << std::endl;
+//
+//                continue;
+//            }
+//
+//            int framesBufferSize;
+//
+//            if (!cmd.TryGetAsInt(2, framesBufferSize))
+//            {
+//                std::cout << "Usage: framesBufferSize must be an integer" << std::endl;
+//
+//                continue;
+//            }
+//
+//            int monitorIndex;
+//
+//            if (!cmd.TryGetAsInt(3, monitorIndex))
+//            {
+//                std::cout << "Usage: monitor must be an integer" << std::endl;
+//
+//                continue;
+//            }
+//
+//            HANDLE_EXCEPTIONS(serverHandle->start(framerate, framesBufferSize, monitorIndex));
+//        }
+//        else if (cmd.Get(0) == "stop")
+//        {
+//            if (cmd.Size() != 2)
+//            {
+//                std::cout << "Usage: stop <folder>" << std::endl;
+//
+//                continue;
+//            }
+//
+//            std::string folderPath = cmd.Get(1);
+//
+//            HANDLE_EXCEPTIONS(serverHandle->stop(folderPath));
+//        }
+//        else if (cmd.Get(0) == "cancel")
+//        {
+//            HANDLE_EXCEPTIONS(serverHandle->cancel());
+//        }
+//        else if (cmd.Get(0) == "disconnect")
+//        {
+//            HANDLE_EXCEPTIONS(serverHandle->disconnect());
+//
+//            break;
+//        }
+//        else if (cmd.Get(0) == "kill")
+//        {
+//            HANDLE_EXCEPTIONS(serverHandle->kill());
+//
+//            break;
+//        }
+//    }
+//}
 
 int main(int argc, char* argv[])
 {
@@ -306,17 +306,34 @@ int main(int argc, char* argv[])
     {
         int framerate = 1;
         int framebuffer = 10;
+        bool isMegabytes = false;
         int monitorIndex = 0;
-
+        
         for (int i = 2; i < cmd.Size(); i++) 
         {
             if (cmd.Get(i) == "-framerate" && i + 1 < cmd.Size()  && cmd.TryGetAsInt(i + 1, framerate))
             {
                 i++;
             }
-            else if (cmd.Get(i) == "-framebuffer" && i + 1 < cmd.Size() && cmd.TryGetAsInt(i + 1, framebuffer))
+            else if (cmd.Get(i) == "-framebuffer" && i + 1 < cmd.Size())
             {
-                i++;
+                if (cmd.Get(i + 1) == "-mb" && i + 2 < cmd.Size() && cmd.TryGetAsInt(i + 2, framebuffer))
+                {
+                    isMegabytes = true;
+                    i += 2;
+                }
+                else if (cmd.TryGetAsInt(i + 1, framebuffer))
+                {
+                    isMegabytes = false;
+                    i++;
+                }
+                else
+                {
+                    std::cout << invalidCommandSynatxMessage << std::endl;
+                    std::cout << startHelpMessage << std::endl;
+
+                    return 0;
+                }
             }
             else if (cmd.Get(i) == "-monitor" && i + 1 < cmd.Size() && cmd.TryGetAsInt(i + 1, monitorIndex))
             {
@@ -342,7 +359,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        Start(framerate, framebuffer, monitorIndex);
+        Start(framerate, framebuffer, isMegabytes, monitorIndex);
     }
     else if (cmd.Get(1) == "-stop")
     {
@@ -387,7 +404,7 @@ int main(int argc, char* argv[])
     }
     else if (cmd.Get(1) == "-newclient")
     {
-        NewClient();
+        //NewClient();
     }
     else 
     {
