@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "SimpleCapture.h"
-#include "ScreenRecordingToolProvider.h"
+#include "ScreenRecorderProvider.h"
 
 namespace winrt
 {

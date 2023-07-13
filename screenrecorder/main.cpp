@@ -1,34 +1,15 @@
 ﻿#include "pch.h"
 #include "Server.h"
-#include "ServerHandle.h"
-#include "MonitorInfo.h"
+#include "Client.h"
+#include "CommandLine.h"
+#include "Request.h"
+#include "Response.h"
 
 TRACELOGGING_DEFINE_PROVIDER(
     g_hMyComponentProvider,
-    "ScreenRecordingTool",
+    "ScreenRecorder",
     // Human-readable guid: fe8fc3d0-1e6a-42f2-be28-9f8a0fcf7b04
     (0xfe8fc3d0, 0x1e6a, 0x42f2, 0xbe, 0x28, 0x9f, 0x8a, 0x0f, 0xcf, 0x7b, 0x04));
-
-#define HANDLE_EXCEPTIONS(serverHandle_function_call) \
-    try \
-    { \
-        serverHandle_function_call; \
-    } \
-    catch (const std::invalid_argument& e) \
-    { \
-        std::cerr << "\n\tUnexpected error: " << e.what() << std::endl; \
-        return; \
-    } \
-    catch (const std::ios_base::failure& e) \
-    { \
-        std::cerr << "\n\tUnexpected error: " << e.what() << std::endl; \
-        return; \
-    } \
-    catch (const std::runtime_error& e) \
-    { \
-        std::cerr << "\n\tUnexpected error: " << e.what() << std::endl; \
-        return; \
-    }
 
 const std::string helpMessage = "\n\tUsage: screenrecorder.exe options ...\n\n"
 "\t-help start\t- for screen recording start command\n"
@@ -48,32 +29,27 @@ const std::string stopHelpMessage = "\n  screenrecorder.exe -stop ...         St
 "\n  screenrecorder.exe -cancel ...       Cancels the screen recording.\n"
 "\tUsage:\tscreenrecorder.exe -cancel\n";
 
-const std::string invalidCommandSynatxMessage = "\b\tInvalid command syntax.";
+const std::string invalidCommandSynatxMessage = "\b\tInvalid command syntax.\n";
 
-void Start(int framerate, int framebuffer, bool isMegabytes, int monitorIndex)
+const std::string recordingAlreadyStarted = "\b\tThere is already a recording in process.\n";
+const std::string recordingNotStartedMessage = "\b\tThere is no recording in process.\n";
+
+const std::string failedToCommunicateWithServerProcessMessage = "\b\tFailed to communicate with recording process.\n";
+const std::string failedToCreateServerProcessMessage = "\b\tFailed to create the recording process.\n";
+const std::string failedToConnectToServerProcessMessage = "\b\tFailed to connect to the recording process.\n";
+
+const std::string unknownEnumCaseMessage = "\b\tReceived an unknown response from the recording process.\n";
+const std::string defaultEnumCaseMessage = "\b\tReceived an unhandled response from the recording process.\n";
+
+const std::string defaultSeverExceptioinMessage = "\b\tReceived an unknown exception from the recording process.\n";
+
+bool TryCreateRecordingProcess()
 {
-    // Check to make sure recording process does not exist before starting a recording
-
-    std::unique_ptr<ServerHandle> serverHandle = std::make_unique<ServerHandle>();
-
-    if (serverHandle->try_init())
-    {
-        std::cout << "\n\tThere is already a recording active." << std::endl;
-
-        HANDLE_EXCEPTIONS(serverHandle->disconnect());
-
-        return;
-    }
-
-    // Create recording process
-
     TCHAR szPath[MAX_PATH];
 
     if (!GetModuleFileName(NULL, szPath, MAX_PATH))
     {
-        std::cerr << "\n\tUnexpected error: Failed to get module name." << std::endl;
-
-        return;
+        return false;
     }
 
     std::wstring cmdLine = std::wstring(szPath) + L" -newserver";
@@ -85,329 +61,400 @@ void Start(int framerate, int framebuffer, bool isMegabytes, int monitorIndex)
 
     if (!CreateProcess(szPath, &cmdLine[0], NULL, NULL, TRUE, 0, NULL, NULL, &info, &processInfo))
     {
-        std::cerr << "\n\tUnexpected error: Failed to create recording process." << std::endl;
-
         CloseHandle(processInfo.hProcess);
         CloseHandle(processInfo.hThread);
 
-        return;
+        return false;
     }
 
     CloseHandle(processInfo.hProcess);
     CloseHandle(processInfo.hThread);
 
-    // Connect to recording process
-
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    int retries = 0;
-
-    while (!serverHandle->try_init() && retries < 3)
-    {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-
-        retries++;
-    }
-
-    if (retries == 3) 
-    {
-        std::cerr << "\n\tUnexpected error: Failed to connect to recording process." << std::endl;
-
-        return;
-    }
-
-    HANDLE_EXCEPTIONS(serverHandle->start(framerate, framebuffer, isMegabytes, monitorIndex));
-    HANDLE_EXCEPTIONS(serverHandle->disconnect());
+    return true;
 }
 
-void Stop(std::string folderPath)
+void start(CommandLine& commandLine)
 {
-    // Check to make sure recording process exists before telling it to stop recording
+    int framerate, monitorIndex, bufferCapacity;
+    bool isMegabytes;
 
-    std::unique_ptr<ServerHandle> serverHandle = std::make_unique<ServerHandle>();
-
-    if (!serverHandle->try_init())
+    try
     {
-        std::cout << "\n\tThere is no recording active." << std::endl;
+        commandLine.GetStartArgs(framerate, monitorIndex, bufferCapacity, isMegabytes);
+    }
+    catch (const std::invalid_argument& e)
+    {
+        std::cout << invalidCommandSynatxMessage << std::endl;
+        std::cout << startHelpMessage << std::endl;
 
         return;
     }
 
-    // Tell recording process to stop recording
+    Request startRequest = Request::BuildStartRequest(framerate, monitorIndex, bufferCapacity, isMegabytes);
+    Request disconnectRequest = Request::BuildDisconnectRequest();
+    Request killRequest = Request::BuildKillRequest();
+    Response response;
+    Client client;
 
-    HANDLE_EXCEPTIONS(serverHandle->stop(folderPath));
-    HANDLE_EXCEPTIONS(serverHandle->kill());
+    if (client.try_connect())
+    {
+        std::cout << recordingAlreadyStarted << std::endl;
+
+        try
+        {
+            client.send(disconnectRequest);
+        }
+        catch (const std::ios_base::failure& e)
+        {
+            std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+        }
+
+        return;
+    }
+
+    if (!TryCreateRecordingProcess())
+    {
+        std::cout << failedToCreateServerProcessMessage << std::endl;
+
+        return;
+    }
+
+    if (!client.try_connect(3))
+    {
+        std::cout << failedToConnectToServerProcessMessage << std::endl;
+
+        return;
+    }
+
+    try
+    {
+        response = client.send(startRequest);
+    }
+    catch (const std::ios_base::failure& e)
+    {
+        std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+
+        return;
+    }
+
+    std::exception e;
+
+    switch (response.ParseResponseType())
+    {
+    case ResponseType::Success:
+        break;
+    case ResponseType::Exception:
+        try
+        {
+            response.ParseExceptionArgs(e);
+
+            std::cout << e.what() << std::endl;
+        }
+        catch (const std::invalid_argument& e)
+        {
+            std::cout << defaultSeverExceptioinMessage << std::endl;
+        }
+
+        try
+        {
+            client.send(killRequest);
+        }
+        catch (const std::ios_base::failure& e)
+        {
+            std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+        }
+
+        return;
+    case ResponseType::Unknown:
+        std::cout << unknownEnumCaseMessage << std::endl;
+
+        try
+        {
+            client.send(killRequest);
+        }
+        catch (const std::ios_base::failure& e)
+        {
+            std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+        }
+
+        return;
+    default:
+        std::cout << defaultEnumCaseMessage << std::endl;
+
+        try
+        {
+            client.send(killRequest);
+        }
+        catch (const std::ios_base::failure& e)
+        {
+            std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+        }
+
+        return;
+    }
+
+    try
+    {
+        client.send(disconnectRequest);
+    }
+    catch (const std::ios_base::failure& e)
+    {
+        std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+    }
 }
 
-void Cancel()
+void stop(CommandLine& commandLine)
 {
-    // Check to make sure recording process exists before telling it to stop recording
+    std::string folder;
 
-    std::unique_ptr<ServerHandle> serverHandle = std::make_unique<ServerHandle>();
-
-    if (!serverHandle->try_init())
+    try
     {
-        std::cout << "\n\tThere is no recording active." << std::endl;
+        commandLine.GetStopArgs(folder);
+    }
+    catch (const std::invalid_argument& e)
+    {
+        std::cout << invalidCommandSynatxMessage << std::endl;
+        std::cout << stopHelpMessage << std::endl;
 
         return;
     }
 
-    // Tell recording process to stop recording
+    Request stopRequest = Request::BuildStopRequest(folder);
+    Request disconnectRequest = Request::BuildDisconnectRequest();
+    Request killRequest = Request::BuildKillRequest();
+    Response response;
+    Client client;
 
-    HANDLE_EXCEPTIONS(serverHandle->cancel());
-    HANDLE_EXCEPTIONS(serverHandle->kill());
+    if (!client.try_connect())
+    {
+        std::cout << recordingNotStartedMessage << std::endl;
+
+        return;
+    }
+
+    try
+    {
+        response = client.send(stopRequest);
+    }
+    catch (const std::ios_base::failure& e)
+    {
+        std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+
+        return;
+    }
+
+    std::exception e;
+
+    switch (response.ParseResponseType())
+    {
+    case ResponseType::Success:
+        break;
+    case ResponseType::Exception:
+        try
+        {
+            response.ParseExceptionArgs(e);
+
+            std::cout << e.what() << std::endl;
+        }
+        catch (const std::invalid_argument& e)
+        {
+            std::cout << defaultSeverExceptioinMessage << std::endl;
+        }
+
+        try
+        {
+            client.send(disconnectRequest);
+        }
+        catch (const std::ios_base::failure& e)
+        {
+            std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+        }
+
+        return;
+    case ResponseType::Unknown:
+        std::cout << unknownEnumCaseMessage << std::endl;
+
+        try
+        {
+            client.send(disconnectRequest);
+        }
+        catch (const std::ios_base::failure& e)
+        {
+            std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+        }
+
+        return;
+    default:
+        std::cout << defaultEnumCaseMessage << std::endl;
+
+        try
+        {
+            client.send(disconnectRequest);
+        }
+        catch (const std::ios_base::failure& e)
+        {
+            std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+        }
+
+        return;
+    }
+
+    try
+    {
+        client.send(killRequest);
+    }
+    catch (const std::ios_base::failure& e)
+    {
+        // print could not commnicate with server or something
+    }
 }
 
-void NewServer()
+void cancel(CommandLine& commandLine)
 {
-    // Check to make sure recording process does not exist before starting a recording
+    Request request = Request::BuildCancelRequest();
+    Request disconnectRequest = Request::BuildDisconnectRequest();
+    Request killRequest = Request::BuildKillRequest();
+    Response response;
+    Client client;
 
-    std::unique_ptr<ServerHandle> serverHandle = std::make_unique<ServerHandle>();
-
-    if (serverHandle->try_init())
+    if (!client.try_connect()) 
     {
-        std::cout << "\n\tThere is already a server active." << std::endl;
-
-        HANDLE_EXCEPTIONS(serverHandle->disconnect());
+        std::cout << recordingNotStartedMessage << std::endl;
 
         return;
     }
 
-    // Create and run server
+    try
+    {
+        response = client.send(request);
+    }
+    catch (const std::ios_base::failure& e)
+    {
+        std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+
+        return;
+    }
+
+    std::exception e;
+
+    switch (response.ParseResponseType())
+    {
+    case ResponseType::Success:
+        break;
+    case ResponseType::Exception:
+        try
+        {
+            response.ParseExceptionArgs(e);
+
+            std::cout << e.what() << std::endl;
+        }
+        catch (const std::invalid_argument& e)
+        {
+            std::cout << defaultSeverExceptioinMessage << std::endl;
+        }
+
+        try
+        {
+            client.send(disconnectRequest);
+        }
+        catch (const std::ios_base::failure& e)
+        {
+            std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+        }
+
+        return;
+    case ResponseType::Unknown:
+        std::cout << unknownEnumCaseMessage << std::endl;
+
+        try
+        {
+            client.send(disconnectRequest);
+        }
+        catch (const std::ios_base::failure& e)
+        {
+            std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+        }
+
+        return;
+    default:
+        std::cout << defaultEnumCaseMessage << std::endl;
+
+        try
+        {
+            client.send(disconnectRequest);
+        }
+        catch (const std::ios_base::failure& e)
+        {
+            std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+        }
+
+        return;
+    }
+
+    try 
+    {
+        client.send(killRequest);
+    }
+    catch (const std::ios_base::failure& e)
+    {
+        std::cout << failedToCommunicateWithServerProcessMessage << std::endl;
+    }
+}
+
+void new_server()
+{
+    Request disconnectRequest = Request::BuildDisconnectRequest();
+    Response response;
+    Client client;
+
+    if (client.try_connect())
+    {
+        try
+        {
+            client.send(disconnectRequest);
+        }
+        catch (const std::ios_base::failure& e)
+        {
+        }
+
+        return;
+    }
 
     std::unique_ptr<Server> server = std::make_unique<Server>();
 
-    if (!server->try_init()) 
+    if (!server->try_init())
     {
-        std::cout << "\n\tUnexpected error: Failed to start server." << std::endl;
-
         return;
     }
 
     server->run();
 }
 
-//void NewClient()
-//{
-//    // Create serverHandle
-//
-//    std::unique_ptr<ServerHandle> serverHandle = std::make_unique<ServerHandle>();
-//
-//    if (!serverHandle->try_init())
-//    {
-//        std::cout << "\n\tThere is no server active to connect to." << std::endl;
-//
-//        return;
-//    }
-//    while (true) 
-//    {
-//        std::string input;
-//        std::cout << ">> ";
-//        std::getline(std::cin, input);
-//        CommandLine cmd(input);
-//
-//        if (cmd.Get(0) == "start") 
-//        {
-//            if (cmd.Size() != 3)
-//            {
-//                std::cout << "Usage: start <framerate> <framesBufferSize>" << std::endl;
-//
-//                continue;
-//            }
-//
-//            int framerate;
-//
-//            if (!cmd.TryGetAsInt(1, framerate))
-//            {
-//                std::cout << "Usage: framerate must be an integer" << std::endl;
-//
-//                continue;
-//            }
-//
-//            int framesBufferSize;
-//
-//            if (!cmd.TryGetAsInt(2, framesBufferSize))
-//            {
-//                std::cout << "Usage: framesBufferSize must be an integer" << std::endl;
-//
-//                continue;
-//            }
-//
-//            int monitorIndex;
-//
-//            if (!cmd.TryGetAsInt(3, monitorIndex))
-//            {
-//                std::cout << "Usage: monitor must be an integer" << std::endl;
-//
-//                continue;
-//            }
-//
-//            HANDLE_EXCEPTIONS(serverHandle->start(framerate, framesBufferSize, monitorIndex));
-//        }
-//        else if (cmd.Get(0) == "stop")
-//        {
-//            if (cmd.Size() != 2)
-//            {
-//                std::cout << "Usage: stop <folder>" << std::endl;
-//
-//                continue;
-//            }
-//
-//            std::string folderPath = cmd.Get(1);
-//
-//            HANDLE_EXCEPTIONS(serverHandle->stop(folderPath));
-//        }
-//        else if (cmd.Get(0) == "cancel")
-//        {
-//            HANDLE_EXCEPTIONS(serverHandle->cancel());
-//        }
-//        else if (cmd.Get(0) == "disconnect")
-//        {
-//            HANDLE_EXCEPTIONS(serverHandle->disconnect());
-//
-//            break;
-//        }
-//        else if (cmd.Get(0) == "kill")
-//        {
-//            HANDLE_EXCEPTIONS(serverHandle->kill());
-//
-//            break;
-//        }
-//    }
-//}
-
 int main(int argc, char* argv[])
 {
-    CommandLine cmd(argc, argv);
+    CommandLine commandLine(argc, argv);
 
-    if (cmd.Size() < 2)
+    switch (commandLine.GetCommandType())
     {
-        std::cout << helpMessage << std::endl;
-    }
-    else if (cmd.Get(1) == "-help") 
-    {
-        if (cmd.Size() < 3)
-        {
+        case CommandType::Start:
+            start(commandLine);
+
+            break;
+        case CommandType::Stop:
+            stop(commandLine);
+
+            break;
+        case CommandType::Cancel:
+            cancel(commandLine);
+
+            break;
+        case CommandType::NewServer:
+            new_server();
+
+            break;
+        case CommandType::Unknown:
+        default:
+            std::cout << invalidCommandSynatxMessage << std::endl;
             std::cout << helpMessage << std::endl;
-        }
-        else if (cmd.Get(2) == "start")
-        {
-            std::cout << startHelpMessage << std::endl;
-        }
-        else if (cmd.Get(2) == "stop")
-        {
-            std::cout << stopHelpMessage << std::endl;
-        }
-        else 
-        {
-            std::cout << helpMessage << std::endl;
-        } 
-    }
-    else if (cmd.Get(1) == "-start")
-    {
-        int framerate = 1;
-        int framebuffer = 10;
-        bool isMegabytes = false;
-        int monitorIndex = 0;
-        
-        for (int i = 2; i < cmd.Size(); i++) 
-        {
-            if (cmd.Get(i) == "-framerate" && i + 1 < cmd.Size()  && cmd.TryGetAsInt(i + 1, framerate))
-            {
-                i++;
-            }
-            else if (cmd.Get(i) == "-framebuffer" && i + 1 < cmd.Size())
-            {
-                if (cmd.Get(i + 1) == "-mb" && i + 2 < cmd.Size() && cmd.TryGetAsInt(i + 2, framebuffer))
-                {
-                    isMegabytes = true;
-                    i += 2;
-                }
-                else if (cmd.TryGetAsInt(i + 1, framebuffer))
-                {
-                    isMegabytes = false;
-                    i++;
-                }
-                else
-                {
-                    std::cout << invalidCommandSynatxMessage << std::endl;
-                    std::cout << startHelpMessage << std::endl;
-
-                    return 0;
-                }
-            }
-            else if (cmd.Get(i) == "-monitor" && i + 1 < cmd.Size() && cmd.TryGetAsInt(i + 1, monitorIndex))
-            {
-                // Given that # of monitors is an implementation detail of the server, in the future we should let the server throw us an error if this happens.
-                // Before we do this, I would like to revamp how the server returns errrors. Don't love the protocol for responses at the moment.
-                std::vector<MonitorInfo> monitors = MonitorInfo::EnumerateAllMonitors(true);
-
-                if (monitorIndex < 0 || monitors.size() <= monitorIndex) 
-                {
-                    std::cout << "\n\tThis is not a valid monitor." << std::endl;
-
-                    return 0;
-                }
-
-                i++;
-            }
-            else 
-            {
-                std::cout << invalidCommandSynatxMessage << std::endl;
-                std::cout << startHelpMessage << std::endl;
-
-                return 0;
-            }
-        }
-
-        Start(framerate, framebuffer, isMegabytes, monitorIndex);
-    }
-    else if (cmd.Get(1) == "-stop")
-    {
-        if (cmd.Size() < 3) 
-        {
-            std::cout << invalidCommandSynatxMessage << std::endl;
-            std::cout << stopHelpMessage << std::endl;
-
-            return 0;
-        }
-
-        std::string folderPath = cmd.Get(2);
-
-        try
-        {
-            StorageFolder::GetFolderFromPathAsync(winrt::to_hstring(folderPath)).get();
-        }
-        catch (const winrt::hresult_invalid_argument& e)
-        {
-            std::cout << invalidCommandSynatxMessage << std::endl;
-            std::cout << stopHelpMessage << std::endl;
-
-            return 0;
-        }
-        catch (const winrt::hresult_error& e)
-        {
-            std::cout << invalidCommandSynatxMessage << std::endl;
-            std::cout << stopHelpMessage << std::endl;
-
-            return 0;
-        }
-
-        Stop(folderPath);
-    }
-    else if (cmd.Get(1) == "-cancel")
-    {
-        Cancel();
-    }
-    else if (cmd.Get(1) == "-newserver")
-    { 
-        NewServer();
-    }
-    else if (cmd.Get(1) == "-newclient")
-    {
-        //NewClient();
-    }
-    else 
-    {
-        std::cout << helpMessage << std::endl;
     }
 }

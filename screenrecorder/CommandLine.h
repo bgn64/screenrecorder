@@ -2,33 +2,17 @@
 
 #include "pch.h"
 
-// The purpose of this class is to provide a utility for parsing tokens in a command line and converting them to integers.
+enum class CommandType { Start, Stop, Cancel, NewServer, Unknown };
+
 class CommandLine {
 public:
-    CommandLine(const std::string& commandLine);
-    CommandLine(int argc, char* argv[]);
-    int Size() const;
+    CommandLine(int argc, char* argv[]) : m_argc(argc), m_argv(argv) {}
 
-    /**
-     * @throws std::out_of_range exception if index is out of range of tokens
-     */
-    bool TryGetAsInt(int i , int& value) const;
-
-    /**
-     * @throws std::out_of_range exception if index is out of range of tokens
-     */
-    bool TryGetAsBool(int i, bool& value) const;
-
-    /**
-     * @throws std::out_of_range exception if indices are out of range of tokens
-     */
-    std::string Get(int startIndex, int stopIndex) const;
-
-    /**
-     * @throws std::out_of_range exception if index is out of range of tokens
-     */
-    std::string Get(int index) const;
+    CommandType GetCommandType() const;
+    void GetStartArgs(int& framerate, int& monitor, int& bufferSize, bool& isMegabytes) const;
+    void GetStopArgs(std::string& folder) const;
 
 private:
-    std::vector<std::string> tokens;
+    int m_argc;
+    char** m_argv;
 };

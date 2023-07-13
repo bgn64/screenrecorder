@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.Windows.CppWinRT.2.0.220531.1\build\native\Microsoft.Windows.CppWinRT.props" Condition="Exists('..\packages\Microsoft.Windows.CppWinRT.2.0.220531.1\build\native\Microsoft.Windows.CppWinRT.props')" />
   <PropertyGroup Label="Globals">
@@ -118,24 +118,32 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CircularFrameBuffer.h" />
-    <ClInclude Include="ServerHandle.h" />
+    <ClInclude Include="Client.h" />
+    <ClInclude Include="DataStream.h" />
+    <ClInclude Include="Request.h" />
+    <ClInclude Include="ScreenRecorder.h" />
     <ClInclude Include="CommandLine.h" />
     <ClInclude Include="MonitorInfo.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Pipe.h" />
+    <ClInclude Include="ScreenRecorderProvider.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="SimpleCapture.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CircularFrameBuffer.cpp" />
-    <ClCompile Include="ServerHandle.cpp" />
+    <ClCompile Include="Client.cpp" />
+    <ClCompile Include="DataStream.cpp" />
+    <ClCompile Include="Request.cpp" />
+    <ClCompile Include="Response.cpp" />
+    <ClCompile Include="Response.h" />
+    <ClCompile Include="ScreenRecorder.cpp" />
     <ClCompile Include="CommandLine.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Pipe.cpp" />
-    <ClCompile Include="ScreenRecordingToolProvider.h" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="SimpleCapture.cpp" />
   </ItemGroup>

@@ -13,24 +13,24 @@ public:
     /**
      * @throws std::ios_base::failure if function fails
      */
-    void send(const std::string& message);
+    void send(const std::string& message) const;
 
     /**
      * @throws std::ios_base::failure if function fails
      */
-    std::string receive();
+    std::string receive() const;
 
     /**
      * @throws std::invalid_argument if called on a SERVER pipe
      * @throws std::ios_base::failure if attempt to disconnect fails
      */
-    void disconnect();
+    void disconnect() const;
 
     /**
      * @throws std::invalid_argument if called on a SERVER pipe
      * @throws std::ios_base::failure if attempt to connect fails
      */
-    void connect();
+    void connect() const;
 
 private:
     std::wstring m_name;

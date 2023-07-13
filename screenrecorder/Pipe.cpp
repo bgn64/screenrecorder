@@ -53,7 +53,7 @@ Pipe::~Pipe()
     }
 }
 
-void Pipe::send(const std::string& message) 
+void Pipe::send(const std::string& message) const
 {
     DWORD bytesWritten;
 
@@ -63,7 +63,7 @@ void Pipe::send(const std::string& message)
     }
 }
 
-std::string Pipe::receive()
+std::string Pipe::receive() const
 {
     char buffer[1024];
     DWORD bytesRead;
@@ -76,7 +76,7 @@ std::string Pipe::receive()
     return std::string(buffer, bytesRead);
 }
 
-void Pipe::disconnect() 
+void Pipe::disconnect() const
 {
     if (m_mode != SERVER)
     {
@@ -89,7 +89,7 @@ void Pipe::disconnect()
     }
 }
 
-void Pipe::connect() 
+void Pipe::connect() const
 {
     if (m_mode != SERVER)
     {

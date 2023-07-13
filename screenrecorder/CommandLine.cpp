@@ -1,96 +1,100 @@
 #include "pch.h"
 #include "CommandLine.h"
 
+std::map<std::string, CommandType> map = { {"-start", CommandType::Start}, 
+	{"-stop", CommandType::Stop}, 
+	{"-cancel", CommandType::Cancel}, 
+	{"-newserver", CommandType::NewServer} };
 
-CommandLine::CommandLine(const std::string& commandLine) 
+CommandType CommandLine::GetCommandType() const
 {
-    std::istringstream iss(commandLine);
-    std::string token;
+	if (m_argc < 2) 
+	{
+		return CommandType::Unknown;
+	}
 
-    while (iss >> token) 
-    {
-        tokens.push_back(token);
-    }
+	auto it = map.find(m_argv[1]);
+
+	if (it != map.end()) 
+	{
+		CommandType type = it->second;
+		return type;
+	}
+	else 
+	{
+		return CommandType::Unknown;
+	}
 }
 
-CommandLine::CommandLine(int argc, char* argv[]) 
+void CommandLine::GetStartArgs(int& framerate, int& monitor, int& bufferSize, bool& isMegabytes) const
 {
-    for (int i = 0; i < argc; ++i) 
-    {
-        tokens.emplace_back(argv[i]);
-    }
+	int i = 2;
+	framerate = 1;
+	monitor = 0;
+	bufferSize = 100;
+	isMegabytes = true;
+
+	while (i < m_argc) 
+	{
+		if (strcmp(m_argv[i], "-framerate") == 0)
+		{
+			i++;
+
+			if (i == m_argc)
+			{
+				throw std::invalid_argument("Syntax error parsing args.");
+			}
+			
+			framerate = std::stoi(m_argv[i]);
+			
+			i++;
+		}
+		else if (strcmp(m_argv[i], "-monitor") == 0)
+		{
+			i++;
+
+			if (i == m_argc)
+			{
+				throw std::invalid_argument("Syntax error parsing args.");
+			}
+
+			monitor = std::stoi(m_argv[i]);
+
+			i++;
+		}
+		else if (strcmp(m_argv[i], "-buffersize") == 0)
+		{
+			i++;
+
+			if (i == m_argc)
+			{
+				throw std::invalid_argument("Syntax error parsing args.");
+			}
+
+			isMegabytes = strcmp(m_argv[i], "-mb") == 0;
+
+			if (isMegabytes)
+			{
+				i++;
+			}
+
+			bufferSize = std::stoi(m_argv[i]);
+
+			i++;
+		}
+		else
+		{
+			throw std::invalid_argument("Syntax error parsing args.");
+		}
+	}
 }
 
-int CommandLine::Size() const
+void CommandLine::GetStopArgs(std::string& folder) const
 {
-    return tokens.size();
-}
+	if (m_argc < 3)
+	{
+		throw std::invalid_argument("Syntax error parsing args.");
+	}
 
-bool CommandLine::TryGetAsInt(int i, int& value) const 
-{
-    if (i < 0 || i >= tokens.size()) 
-    {
-        throw std::out_of_range("Token index out of range");
-    }
-
-    try 
-    {
-        value = std::stoi(tokens[i]);
-
-        return true;
-    }
-    catch (...) 
-    {
-        return false;
-    }
-}
-
-bool CommandLine::TryGetAsBool(int i, bool& value) const
-{
-    if (i < 0 || i >= tokens.size())
-    {
-        throw std::out_of_range("Token index out of range");
-    }
-
-    try
-    {
-        value = std::stoi(tokens[i]) != 0;
-
-        return true;
-    }
-    catch (...)
-    {
-        return false;
-    }
-}
-
-
-std::string CommandLine::Get(int startIndex, int stopIndex) const 
-{
-    if (startIndex > stopIndex || startIndex > tokens.size() || stopIndex < 0)
-    {
-        throw std::out_of_range("Invalid start or stop index");
-    }
-
-    std::ostringstream oss;
-
-    for (int i = startIndex; i < stopIndex; ++i) 
-    {
-        if (i > startIndex) 
-        {
-            oss << ' ';
-        }
-        oss << tokens[i];
-    }
-    return oss.str();
-}
-
-std::string CommandLine::Get(int index) const 
-{
-    if (index < 0 || index >= tokens.size()) 
-    {
-        throw std::out_of_range("Token index out of range");
-    }
-
-    return tokens[index];
+	folder = m_argv[2];
 }

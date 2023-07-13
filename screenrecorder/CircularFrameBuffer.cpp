@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "ScreenRecordingToolProvider.h"
 #include "CircularFrameBuffer.h"
 
 CircularFrameBuffer::CircularFrameBuffer(size_t capacity, bool asMegabytes) : m_capacity(capacity), m_asMegabytes(asMegabytes), m_memoryUsage(0)
@@ -13,9 +12,6 @@ CircularFrameBuffer::CircularFrameBuffer(size_t capacity, bool asMegabytes) : m_
 void CircularFrameBuffer::add_frame(winrt::com_ptr<ID3D11Texture2D> texture, const std::string& filename) 
 {
     size_t frame_size = calculate_frame_size(texture);
-
-    ReceivedFrameEvent(std::to_string(frame_size));
-    ReceivedFrameEvent(std::to_string(m_memoryUsage));
 
     if (m_asMegabytes) 
     {
