@@ -4,7 +4,8 @@
 std::map<std::string, CommandType> map = { {"-start", CommandType::Start}, 
 	{"-stop", CommandType::Stop}, 
 	{"-cancel", CommandType::Cancel}, 
-	{"-newserver", CommandType::NewServer} };
+	{"-newserver", CommandType::NewServer},
+	{"-help", CommandType::Help} };
 
 CommandType CommandLine::GetCommandType() const
 {
@@ -97,4 +98,14 @@ void CommandLine::GetStopArgs(std::string& folder) const
 	}
 
 	folder = m_argv[2];
+}
+
+void CommandLine::GetHelpArgs(std::string& arg) const
+{
+	if (m_argc < 3)
+	{
+		throw std::invalid_argument("Syntax error parsing args.");
+	}
+
+	arg = m_argv[2];
 }

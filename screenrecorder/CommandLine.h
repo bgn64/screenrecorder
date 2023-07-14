@@ -2,7 +2,7 @@
 
 #include "pch.h"
 
-enum class CommandType { Start, Stop, Cancel, NewServer, Unknown };
+enum class CommandType { Start, Stop, Cancel, NewServer, Help, Unknown };
 
 class CommandLine {
 public:
@@ -11,6 +11,7 @@ public:
     CommandType GetCommandType() const;
     void GetStartArgs(int& framerate, int& monitor, int& bufferSize, bool& isMegabytes) const;
     void GetStopArgs(std::string& folder) const;
+    void GetHelpArgs(std::string& arg) const;
 
 private:
     int m_argc;

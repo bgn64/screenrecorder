@@ -16,12 +16,12 @@ const std::string helpMessage = "\n\tUsage: screenrecorder.exe options ...\n\n"
 "\t-help stop\t- for screen recording stop commands\n";
 
 const std::string startHelpMessage = "\n  screenrecorder.exe -start ...        Starts screen recording.\n"
-"\tUsage:\tscreenrecorder.exe -start [-framerate <framerate>] [-framebuffer <# of frames>] [-monitor <monitor # to record>]\n"
+"\tUsage:\tscreenrecorder.exe -start [-framerate <framerate>] [-monitor <monitor # to record>] [-framebuffer -mb <# of frames>] \n"
 "\tEx>\tscreenrecorder.exe -start -framerate 10\n"
-"\tEx>\tscreenrecorder.exe -start -framerate 1 -framebuffer 5 -monitor 0\n\n"
+"\tEx>\tscreenrecorder.exe -start -framerate 1 -monitor 0 -framebuffer -mb 100\n\n"
 "\t-framerate\tSpecifies the rate at which screenshots will be taken, in frames per second.\n"
-"\t-framebuffer\tSpecifies the size of the circular memory buffer in which to store screenshots, in number of screenshots.\n"
-"\t-framebuffer\tSpecifies which monitor screen to record, as an integer.\n";
+"\t-monitor\tSpecifies the monitor to record, as an index. The highest index will record all monitors.\n"
+"\t-framebuffer\tSpecifies the size of the circular memory buffer in which to store screenshots, in number of screenshots. Adding the -mb flag specifies the size of the buffer in megabytes.\n";
 
 const std::string stopHelpMessage = "\n  screenrecorder.exe -stop ...         Stops screen recording saves all screenshots in buffer to a folder.\n"
 "\tUsage:\tscreenrecorder.exe -stop <recording folder>\n"
@@ -430,6 +430,38 @@ void new_server()
     server->run();
 }
 
+void help(CommandLine& commandLine)
+{
+    std::string arg;
+
+    try
+    {
+        commandLine.GetHelpArgs(arg);
+    }
+    catch (const std::invalid_argument& e)
+    {
+        std::cout << invalidCommandSynatxMessage << std::endl;
+        std::cout << helpMessage << std::endl;
+
+        return;
+    }
+
+    if (arg.compare("start") == 0)
+    {
+        std::cout << startHelpMessage << std::endl;
+    }
+
+    else if (arg.compare("stop") == 0)
+    {
+        std::cout << stopHelpMessage << std::endl;
+    }
+    else 
+    {
+        std::cout << invalidCommandSynatxMessage << std::endl;
+        std::cout << helpMessage << std::endl;
+    }
+}
+
 int main(int argc, char* argv[])
 {
     CommandLine commandLine(argc, argv);
@@ -450,6 +482,10 @@ int main(int argc, char* argv[])
             break;
         case CommandType::NewServer:
             new_server();
+
+            break;
+        case CommandType::Help:
+            help(commandLine);
 
             break;
         case CommandType::Unknown:

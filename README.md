@@ -12,12 +12,11 @@ The tool allows you to start and stop recording from the command line. When a re
     screenrecorder.exe -start ...        Starts screen recording.
         Usage:  screenrecorder.exe -start [-framerate <framerate>] [-monitor <monitor index>] [-framebuffer -mb <# of frames>] [-monitor <monitor # to record>]
         Ex>     screenrecorder.exe -start -framerate 10
-        Ex>     screenrecorder.exe -start -framerate 1 -monitor 0 -framebuffer 5 -monitor 0
+        Ex>     screenrecorder.exe -start -framerate 1 -monitor 0 -framebuffer -mb 100
 
         -framerate      Specifies the rate at which screenshots will be taken, in frames per second.
         -monitor        Specifies the monitor to record, as an index. The highest index will record all monitors.
         -framebuffer    Specifies the size of the circular memory buffer in which to store screenshots, in number of screenshots. Adding the -mb flag specifies the size of the buffer in megabytes.
-        -framebuffer    Specifies which monitor screen to record, as an integer.
 
     screenrecorder.exe -stop ...         Stops screen recording saves all screenshots in buffer to a folder.
         Usage:  screenrecorder.exe -stop <recording folder>
