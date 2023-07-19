@@ -63,7 +63,7 @@ void CommandLine::GetStartArgs(int& framerate, int& monitor, int& bufferSize, bo
 
 			i++;
 		}
-		else if (strcmp(m_argv[i], "-buffersize") == 0)
+		else if (strcmp(m_argv[i], "-framebuffer") == 0)
 		{
 			i++;
 

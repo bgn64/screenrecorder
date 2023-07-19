@@ -63,8 +63,6 @@ private:
         }
     }
 
-    void SaveFrames(StorageFolder storageFolder);
-
 private:
     winrt::Windows::Graphics::Capture::GraphicsCaptureItem m_item{ nullptr };
     winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool m_framePool{ nullptr };

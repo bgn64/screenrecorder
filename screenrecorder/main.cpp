@@ -440,7 +440,6 @@ void help(CommandLine& commandLine)
     }
     catch (const std::invalid_argument& e)
     {
-        std::cout << invalidCommandSynatxMessage << std::endl;
         std::cout << helpMessage << std::endl;
 
         return;
