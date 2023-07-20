@@ -93,7 +93,7 @@ void SimpleCapture::OnFrameArrived(winrt::Direct3D11CaptureFramePool const& send
     {
         auto now_sysclock = std::chrono::system_clock::now();
         auto now_time_t = std::chrono::system_clock::to_time_t(now_sysclock);
-        auto now_us = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()) % 1000000;
+        auto now_us = std::chrono::duration_cast<std::chrono::microseconds>(now_sysclock.time_since_epoch()) % 1000000;
         std::stringstream ss;
         ss << std::put_time(std::localtime(&now_time_t), "%Y-%m-%d_%H-%M-%S-") << std::setw(6) << std::setfill('0') << now_us.count();
         std::string timestamp = ss.str();
